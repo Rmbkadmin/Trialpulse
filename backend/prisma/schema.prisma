@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         String
+  verified     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  reviews Review[]
+}
+
+model ResearchSite {
+  id        String   @id @default(uuid())
+  name      String
+  city      String
+  state     String
+  specialty String
+  therapeuticAreas String[] @default([])
+  createdAt DateTime @default(now())
+
+  reviews Review[]
+}
+
+model Review {
+  id                   String   @id @default(uuid())
+  overallRating        Int
+  communicationScore   Int
+  professionalismScore Int
+  experienceScore      Int
+  reviewText           String
+  createdAt            DateTime @default(now())
+
+  userId String
+  siteId String
+
+  user User         @relation(fields: [userId], references: [id])
+  site ResearchSite @relation(fields: [siteId], references: [id])
+}
