@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import StarRating from "../../components/StarRating";
 import Navbar from "../../components/Navbar";
+import type { Metadata } from "next";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
