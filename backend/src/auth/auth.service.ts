@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import * as argon2 from "argon2";
+import { randomUUID } from "crypto";
 
 import { PrismaService } from "../prisma/prisma.service";
 import { EmailService } from "../email/email.service";
@@ -20,20 +21,16 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const existingUser =
-      await this.prisma.user.findUnique({
-        where: { email: dto.email },
-      });
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
 
     if (existingUser) {
-      throw new ConflictException(
-        "User already exists"
-      );
+      throw new ConflictException("User already exists");
     }
 
-    const passwordHash = await argon2.hash(
-      dto.password
-    );
+    const passwordHash = await argon2.hash(dto.password);
+    const verificationToken = randomUUID();
 
     const user = await this.prisma.user.create({
       data: {
@@ -42,11 +39,13 @@ export class AuthService {
         firstName: dto.firstName,
         lastName: dto.lastName,
         role: dto.role,
+        verificationToken,
       },
     });
 
-    await this.emailService.sendWelcomeEmail(
-      user.email
+    await this.emailService.sendVerificationEmail(
+      user.email,
+      verificationToken
     );
 
     return this.createToken(user);
@@ -58,9 +57,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException(
-        "Invalid credentials"
-      );
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     const validPassword = await argon2.verify(
@@ -69,12 +66,32 @@ export class AuthService {
     );
 
     if (!validPassword) {
-      throw new UnauthorizedException(
-        "Invalid credentials"
-      );
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     return this.createToken(user);
+  }
+
+  async verifyEmail(token: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { verificationToken: token },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("Invalid token");
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        verified: true,
+        verificationToken: null,
+      },
+    });
+
+    return {
+      message: "Email verified successfully",
+    };
   }
 
   private createToken(user: any) {

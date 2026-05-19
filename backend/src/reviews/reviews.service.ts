@@ -27,5 +27,10 @@ export class ReviewsService {
   return this.prisma.review.delete({
     where: { id: reviewId },
   });
+  findUser(userId: string) {
+  return this.prisma.user.findUnique({
+    where: { id: userId },
+  });
+}
 }
 }

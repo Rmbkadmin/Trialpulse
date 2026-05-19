@@ -16,10 +16,25 @@ import { ReviewsService } from "./reviews.service";
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
-  @Post()
-  create(@Body() body: any) {
-    return this.reviewsService.create(body);
+  @UseGuards(JwtAuthGuard)
+@Post()
+async createReview(
+  @Body() body: any,
+  @Req() req: any
+) {
+  const user =
+    await this.reviewsService.findUser(
+      req.user.sub
+    );
+
+  if (!user?.verified) {
+    throw new UnauthorizedException(
+      "Verify your email before posting reviews"
+    );
   }
+
+  return this.reviewsService.create(body);
+}
 
   @Get("site/:siteId")
   findBySite(@Param("siteId") siteId: string) {
