@@ -14,7 +14,11 @@ model User {
   lastName     String
   role         String
   verified     Boolean  @default(false)
-  createdAt    DateTime @default(now())
+
+  verificationToken String?
+  resetToken        String?
+
+  createdAt DateTime @default(now())
 
   reviews Review[]
 }
